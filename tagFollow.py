@@ -1,52 +1,49 @@
 import time
 import network
+import math
 from machine import Pin, PWM
 from mqtt import MQTTClient
 from Motor import Motor #wrote a class for motor objects
 import uasyncio as asyncio
-
-
 # ---- MQTT THINGS ----
 ssid = 'Tufts_Robot'
 password = ''
-
 mqtt_broker = 'broker.hivemq.com'
 port = 1883
 topic_sub = 'ME35-24/potato'
-
 isOn = False
-
 def connect_wifi():
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
     wlan.connect(ssid, password)
-    
     while not wlan.isconnected():
         time.sleep(1)
     print('----- connected to wifi -----')
-        
 def connect_mqtt(client):
     client.connect()
     client.subscribe(topic_sub.encode())
     print(f'Subscribed to {topic_sub}')
-        
 def callback(topic, msg):
-    
     val = msg.decode()
     print((topic.decode(), val))
     percent = int(val[1:])
-    pwm = 30000 + percent*(40000-30000)
-
+    #pwm = 20000 + int(percent/100)*(35000-20000)
+    if percent > 100:
+        percent = 100
+    #pwm = int(20000 * (1.02 ** (percent - 90)) + 16634.7716642)
+    pwm = 15000
+    print(pwm)
     if val[0] == 'L':
         motor.goBackward(pwm)
         time.sleep(0.01)
-        motor.stop()
+        #motor.stop()
     elif val[0] == 'R':
         motor.goForward(pwm)
         time.sleep(0.01)
-        motor.stop()
-
-        
+        #motor.stop()
+    elif val[0] == 'N': #Part that messes everything up
+        motor.goForward(0)
+        time.sleep(0.01)
 async def mqtt_handler(client):
     while True:
         if network.WLAN(network.STA_IF).isconnected():
@@ -59,16 +56,13 @@ async def mqtt_handler(client):
             print('Wifi disconnected, trying to connect...')
             connect_wifi()
         await asyncio.sleep(0.01)
-
-
 # --- Defining pins and motor objects ----
 motor1A = Pin('GPIO1', Pin.OUT)
 motor1B = Pin('GPIO2', Pin.OUT)
 motor1PWM = PWM(Pin('GPIO3', Pin.OUT))
 motor = Motor(motor1A, motor1B, motor1PWM, 'left')
-
 connect_wifi()
-client = MQTTClient('ME35_Anne', mqtt_broker, port, keepalive=60)
+client = MQTTClient('ME35_Anne_1', mqtt_broker, port, keepalive=60)
 client.set_callback(callback)
 client.connect()
 client.subscribe(topic_sub.encode())
