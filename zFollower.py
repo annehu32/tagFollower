@@ -21,6 +21,9 @@ from machine import Pin, PWM
 # ----__- MQTT Setup --__---
 #SSID = "Tufts_Robot"  # Network SSID
 #KEY = ""  # Network key
+SSID = "ARRIS-9985"
+KEY = "306865602614"
+
 
 # Init wlan module and connect to network
 wlan = network.WLAN(network.STA_IF)
@@ -52,7 +55,7 @@ clock = time.clock()
 def propControl(val):
     Kp = 0.5
     error = val - 5.5 #at z=-5.5, the car will hit something in front of it
-    minPWM = 15000
+    minPWM = 0
     rangePWM = 65335-minPWM
 
     return int(minPWM + abs(rangePWM*Kp*error))
@@ -73,7 +76,7 @@ while True:
 
         dist = abs(tag.z_translation()) # distance from the camera is Z translation
         change = dist - lastDist
-        lastDist = dist
+        lastDist = dist›
 
         print("distance: " + str(dist))
         if change > 0.1:
